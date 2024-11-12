@@ -14,9 +14,8 @@ spiro_data <-  read.xlsx('https://raw.githubusercontent.com/hophee/kursach/main/
 #выделение нужной даты
 spyro_p11_3 <- spiro_data %>% filter(pacient == 'П11-3') %>%  select(c(1, 3:19))
 spyro_p11_3 <- spyro_p11_3 %>%   mutate(vrema_obsled = as.numeric(hms(vrema_obsled) - hms(vrema_obsled[1])))
-spyro_p11_3 <- spyro_p11_3 %>% mutate(across(rn_r50_om:lf_phi5_grad, ~ rollmean(., k = 3, fill = NA))) 
-#тут стоит подумать, как заполнить первую и последнюю строку исходными значениями
-  
+spyro_p11_3 <- spyro_p11_3 %>% mutate(across(rn_r50_om:lf_phi5_grad, ~ rollmean(., k = 3, fill = c(.[1], .[length(.)])))) 
+
 #отображение одного столбца
 ggplot(data = spyro_p11_3, aes(vrema_obsled, lf_r50_om)) +
   geom_line()
@@ -38,3 +37,8 @@ for (i in names(spyro_p11_3)[-(1:2)]){
     geom_line()
   print(p)
 }
+
+#хуйня какая-то
+vremya <- spyro_p11_3$vrema_obsled
+fourie <- fftfilt(vremya, spyro_p11_3$rn_r50_om)
+plot(vremya, fourie)
