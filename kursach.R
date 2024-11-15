@@ -13,8 +13,8 @@ spiro_data <-  read.xlsx('https://raw.githubusercontent.com/hophee/kursach/main/
 
 #выделение нужной даты
 spyro_p11_3 <- spiro_data %>% filter(pacient == 'П11-3') %>%  select(c(1, 3:19))
-spyro_p11_3 <- spyro_p11_3 %>%   mutate(vrema_obsled = as.numeric(hms(vrema_obsled) - hms(vrema_obsled[1])))
-spyro_p11_3 <- spyro_p11_3 %>% mutate(across(rn_r50_om:lf_phi5_grad, ~ rollmean(., k = 3, fill = c(.[1], .[length(.)])))) 
+spyro_p11_3 <- spyro_p11_3 %>% mutate(vrema_obsled = as.numeric(hms(vrema_obsled) - hms(vrema_obsled[1])))
+spyro_p11_3 <- spyro_p11_3 %>% mutate(across(rn_r50_om:lf_phi5_grad, ~ rollmean(., k = 3, fill = c((.[1]+.[2])/2, (.[length(.)]+.[length(.)-1])/2)))) 
 
 #отображение одного столбца
 ggplot(data = spyro_p11_3, aes(vrema_obsled, lf_r50_om)) +
@@ -42,3 +42,9 @@ for (i in names(spyro_p11_3)[-(1:2)]){
 vremya <- spyro_p11_3$vrema_obsled
 fourie <- fftfilt(vremya, spyro_p11_3$rn_r50_om)
 plot(vremya, fourie)
+
+
+test_df <- data_frame(spyro_p11_3$vrema_obsled, spyro_p11_3$rn_r50_om)
+names(test_df) <- c('t', 'rn_r50')
+plot(test_df$t, test_df$rn_r50)
+
