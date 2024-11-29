@@ -54,7 +54,7 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
     for (i in names(spyro)[2:9]){
       p <- ggplot(data = spyro, aes_string(x = "vrema_obsled", y = i)) +
         geom_line(lwd=0.9) +
-        labs(title = i,
+        labs(title = paste0(pacient_code,'_', i),
              x = "Время",
              y = "")
       print(p)
@@ -65,7 +65,7 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
     for (i in 2:9){
       p <- ggplot(data = spyro, aes_string(x = names(spyro)[i], y = names(spyro)[i+8])) +
         geom_path(lwd=0.9) +
-        labs(title = names(spyro)[i+8],
+        labs(title = paste0(pacient_code,'_', names(spyro)[i+8]),
               x = "Время",
               y = "")
        print(p)
@@ -92,7 +92,7 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
 }
 
 #вызов для одного пацента
-test <- get_pacient_spyro(spiro_data, my_patients[1], 7)
+test <- get_pacient_spyro(spiro_data, my_patients[3], 7)
 
 
 #отображение одного столбца
