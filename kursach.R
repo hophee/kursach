@@ -27,6 +27,12 @@ my_patients <- c('П11-3', 'П13',	'П13-3')
 
 #функция получения спирограмы
 get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
+  get_div <- function(ser, time){
+    ser_dif <- c(diff(ser)[1], diff(ser))
+    time_dif <- c(diff(time)[1], diff(time))
+    diver <- ser_dif / time_dif
+    return (diver)
+  }
   spyro <- df %>% filter(pacient == pacient_code) %>% select(c(1, 3:19)) #отбор нужного пациента, удаление столбца дат
   spyro <- spyro %>% mutate(
     r50_om = (rn_r50_om * lf_r50_om) / (rn_r50_om + lf_r50_om),
@@ -37,18 +43,13 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
     xc5_om = (rn_xc5_om * lf_xc5_om) / (rn_xc5_om + lf_xc5_om),
     z5_om  = (rn_z5_om * lf_z5_om) / (rn_z5_om + lf_z5_om),
     phi5_grad = (rn_phi5_grad * lf_phi5_grad) / (rn_phi5_grad + lf_phi5_grad)) %>% 
-      select(vrema_obsled, r50_om, xc50_om, z50_om, phi50_grad, r5_om, xc5_om, z5_om , phi5_grad)
-  get_div <- function(ser, time){
-    ser_dif <- c(diff(ser)[1], diff(ser))
-    time_dif <- c(diff(time)[1], diff(time))
-    diver <- ser_dif / time_dif
-    return (diver)
-  }
+      select(vrema_obsled, r50_om, xc50_om, z50_om, phi50_grad, r5_om, xc5_om, z5_om , phi5_grad) #пересчёт по двум отведениям
   spyro <- spyro %>% mutate(vrema_obsled = as.numeric(hms(vrema_obsled) - hms(vrema_obsled[1]))) #перевод времени в отсчёт времени
   spyro <- spyro %>% mutate(across(-vrema_obsled, ~ get_div(., vrema_obsled), .names = "div_{.col}"))
-  spyro <- spyro %>% mutate(across(r50_om:phi5_grad, ~ fourie_filter(.)))  #применение фильтра Баттерворта
-  spyro <- spyro %>% mutate(across(r50_om:phi5_grad, ~ scale(.))) # нормирование значений
-  spyro <- spyro %>% mutate(across(r50_om:phi5_grad, ~ rollmean(., k = roll_mean_num, fill = NA))) # скользящее среднее
+  spyro <- spyro %>% mutate(across(r50_om:div_phi5_grad, ~ fourie_filter(.)))  #применение фильтра Баттерворта
+  spyro <- spyro %>% mutate(across(r50_om:div_phi5_grad, ~ rollmean(., k = roll_mean_num, fill = NA))) # скользящее среднее
+  #spyro <- spyro %>% mutate(across(r50_om:phi5_grad, ~ scale(.))) # нормирование значений
+  
   if (long==F) {
     for (i in names(spyro)[2:9]){
       p <- ggplot(data = spyro, aes_string(x = "vrema_obsled", y = i)) +
@@ -63,7 +64,7 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
     }
     for (i in 2:9){
       p <- ggplot(data = spyro, aes_string(x = names(spyro)[i], y = names(spyro)[i+8])) +
-        geom_point(lwd=0.9) +
+        geom_path(lwd=0.9) +
         labs(title = names(spyro)[i+8],
               x = "Время",
               y = "")
@@ -92,7 +93,6 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
 
 #вызов для одного пацента
 test <- get_pacient_spyro(spiro_data, my_patients[1], 7)
-
 
 
 #отображение одного столбца
