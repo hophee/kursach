@@ -56,7 +56,7 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
         geom_line(lwd=0.9) +
         labs(title = paste0(pacient_code,'_', i),
              x = "Время",
-             y = "")
+             y = "Объём лёгких")
       print(p)
       if (safe==T) {
         ggsave(paste0('plots/',pacient_code,'_', i,'.png'), plot = p, width = 10, height = 6)
@@ -66,8 +66,8 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
       p <- ggplot(data = spyro, aes_string(x = names(spyro)[i], y = names(spyro)[i+8])) +
         geom_path(lwd=0.9) +
         labs(title = paste0(pacient_code,'_', names(spyro)[i+8]),
-              x = "Время",
-              y = "")
+              x = "Объём",
+              y = "Объёмная скорость")
        print(p)
       if (safe==T) {
          ggsave(paste0('plots/',pacient_code,'_', names(spyro)[i+8],'.png'), plot = p, width = 10, height = 6)
@@ -95,14 +95,7 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
 test <- get_pacient_spyro(spiro_data, my_patients[3], 7)
 
 
-#отображение одного столбца
-ggplot(data = spyro_p11_3, aes(vrema_obsled, rn_r50_om)) +
-  geom_line()
-
-
-#запись всех графиков в один лист
-plots <- lapply(3:18, function(i){
-  ggplot(spyro_p11_3, aes_string(x = 'vrema_obsled', y = names(spyro_p11_3)[i])) +
-    geom_line()
+#вызов для всех
+dfs_of_my_patients <- lapply(my_patients, function(pats) {
+  get_pacient_spyro(spiro_data, pats, 7, safe=T)
 })
-
