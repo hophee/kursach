@@ -8,7 +8,7 @@ library(zoo) #реализация фильтра скользящего окн�
 library(gsignal)#библиотека для обработки сигналов
 library(purrr)#создание стобцов по маске
 #лучше использовать library(readxl), если загружается локально, тогда read.xlsx заменяется на read_xlsx
-setwd(readLines("/home/iz-user/Documents/univer/additional_kursach/path_to_plots.txt"))
+setwd(readLines("~/config.txt"))
 
 #функция для фильтра сигнала
 fourie_filter <- function(signa, norm_freq=0.4, n=4, type='low') {
@@ -45,7 +45,7 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
     phi5_grad = (rn_phi5_grad * lf_phi5_grad) / (rn_phi5_grad + lf_phi5_grad)) %>% 
       select(vrema_obsled, r50_om, xc50_om, z50_om, phi50_grad, r5_om, xc5_om, z5_om , phi5_grad) #пересчёт по двум отведениям
   spyro <- spyro %>% mutate(vrema_obsled = as.numeric(hms(vrema_obsled) - hms(vrema_obsled[1]))) #перевод времени в отсчёт времени
-  spyro <- spyro %>% mutate(across(-vrema_obsled, ~ get_div(., vrema_obsled), .names = "div_{.col}"))
+  spyro <- spyro %>% mutate(across(-vrema_obsled, ~ get_div(., vrema_obsled), .names = "div_{.col}")) #добавление производных
   spyro <- spyro %>% mutate(across(r50_om:div_phi5_grad, ~ fourie_filter(.)))  #применение фильтра Баттерворта
   spyro <- spyro %>% mutate(across(r50_om:div_phi5_grad, ~ rollmean(., k = roll_mean_num, fill = NA))) # скользящее среднее
   #spyro <- spyro %>% mutate(across(r50_om:phi5_grad, ~ scale(.))) # нормирование значений
@@ -54,7 +54,7 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
     for (i in names(spyro)[2:9]){
       p <- ggplot(data = spyro, aes_string(x = "vrema_obsled", y = i)) +
         geom_line(lwd=0.9) +
-        labs(title = paste0(pacient_code,'_', i),
+        labs(title = paste0(pacient_code,'_', i, ', rollmean=', as.character(roll_mean_num)),
              x = "Время",
              y = "Объём лёгких")
       print(p)
@@ -65,7 +65,7 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
     for (i in 2:9){
       p <- ggplot(data = spyro, aes_string(x = names(spyro)[i], y = names(spyro)[i+8])) +
         geom_path(lwd=0.9) +
-        labs(title = paste0(pacient_code,'_', names(spyro)[i+8]),
+        labs(title = paste0(pacient_code,'_', names(spyro)[i+8], ', rollmean=', as.character(roll_mean_num)),
               x = "Объём",
               y = "Объёмная скорость")
        print(p)
@@ -93,7 +93,6 @@ get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F, safe=F) {
 
 #вызов для одного пацента
 test <- get_pacient_spyro(spiro_data, my_patients[3], 7)
-
 
 #вызов для всех
 dfs_of_my_patients <- lapply(my_patients, function(pats) {
