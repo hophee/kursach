@@ -23,13 +23,16 @@ only_data_get_pacient_spyro <- function(df, pacient_code, roll_mean_num, long=F,
   spyro <- spyro %>% mutate(across(r50_om:div_phi5_grad, ~ fourie_filter(.)))  #применение фильтра Баттерворта
   spyro <- spyro %>% mutate(across(r50_om:div_phi5_grad, ~ rollmean(., k = roll_mean_num, fill = NA))) # скользящее среднее
   #spyro <- spyro %>% mutate(across(r50_om:phi5_grad, ~ scale(.))) # нормирование значений
-  res <- list(spyro, before_filtering)
+  acha <- before_filtering %>% select(r50_om) %>% mutate(before_r50_om = Mod(fft(r50_om))) %>%  slice(-(1:(roll_mean_num-1)))
+  acha <- acha %>% mutate(after_r50_om = Mod(fft(na.omit(spyro$r50_om))))
+  acha <- acha %>% slice(-1)
+  res <- list(spyro, before_filtering, acha)
   return (res)
 }
 
 #поменять здесь индекс у списка пациентов, чтобы получить другой 
-df_after <- only_data_get_pacient_spyro(spiro_data, my_patients[1], 5)[[1]]
-df_before <- only_data_get_pacient_spyro(spiro_data, my_patients[1], 5)[[2]]
+df_after <- only_data_get_pacient_spyro(spiro_data, my_patients[3], 5)[[1]]
+df_before <- only_data_get_pacient_spyro(spiro_data, my_patients[3], 5)[[2]]
 
 df <- data.frame(df_before$vrema_obsled, df_before$r50_om,df_after$r50_om)
 names(df) <- c('vrema_obsled', 'before_r50_om', 'after_r50_om')
@@ -62,3 +65,21 @@ p <- ggplot(data=df) +
 p
 ggsave('p11_3_pnevmo_compare.png', plot = p, width = 10, height = 6, dpi=600)
 #тут тоже
+
+#сделать графиик АЧХ(не нормальную, а просто гистограмму модулей fft)
+get_acha <- function(pac_num, bis=100) {
+  acha <- only_data_get_pacient_spyro(spiro_data, my_patients[pac_num], 5)[[3]]
+  p <- ggplot(data=acha)+
+    geom_histogram(aes(x=before_r50_om,fill = 'Before'), bins=bis, alpha=0.7)+
+    geom_histogram(aes(x=after_r50_om,fill = 'After'), bins=bis, alpha=0.5) +
+    scale_fill_manual(values = c("Before" = '#ef233c', "After" = '#3a86ff'),
+                       name = "Измерения",
+                       labels = c("После фильтрации", "До фильтрации")) +
+    labs(x='Частоты',
+         y='',
+         title='Сравнение данных до и после фильтрации', 
+         subtitle = paste0('АЧХ, пациент ',my_patients[pac_num]))
+  print(p)
+}
+lapply(1:3, function(x) get_acha(x,bis=150))
+                 
